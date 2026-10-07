@@ -1,0 +1,45 @@
+name: Gerar APK MOVE+
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Preparar projeto Android
+        run: |
+          mkdir -p projeto
+          unzip -o MOVE_plus_Android_v1.zip -d projeto
+
+          ROOT=$(find projeto -name settings.gradle -o -name settings.gradle.kts | head -n 1 | xargs dirname)
+          echo "Projeto encontrado em: $ROOT"
+          echo "ROOT=$ROOT" >> $GITHUB_ENV
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Gerar APK
+        working-directory: ${{ env.ROOT }}
+        run: gradle assembleDebug --stacktrace
+
+      - name: Enviar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MOVE-plus-APK
+          path: ${{ env.ROOT }}/app/build/outputs/apk/debug/*.apk
